@@ -37,10 +37,13 @@ All packages have been installed using:
 Special configuration has been done for the telnetd, xinetd packages. After installation using:
 
 > sudo apt-get install telnetd
+> 
 > sudo apt-get install xinetd
+> 
 > sudo service xinetd start
 
 The following command creates the inetd.conf file. Nothing needs to be modified inside it.
+
 > sudo vim /etc/inetd.conf
 
 The following file, needs to be modified
