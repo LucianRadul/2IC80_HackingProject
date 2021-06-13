@@ -7,6 +7,7 @@ import sys
 import os
 import platform
 import time
+import ipaddress
 from multiprocessing import Process
 
 g_target_ip = ""
@@ -17,8 +18,12 @@ def rtrv_interfaces():
     return get_if_list()
 
 def scan_hosts_scapy(interface: str):
+    host_ip = get_if_addr(interface)
+    subnet_mask = "255.255.255.0"
+    host_ip = host_ip + "/" + subnet_mask
+    net = ipaddress.ip_network(host_ip, strict = False)
     host = []
-    ans, unans = srp(Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst="10.10.10.0/24"), timeout = 2, iface = interface, verbose = False)
+    ans, unans = srp(Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst = str(net)), timeout = 2, iface = interface, verbose = False) #default: 10.10.10.0/24
 
     for i in range(len(ans)):
         host.append((str(i) + ".", "IP: ", ans[i][1]["ARP"].psrc, "and MAC: ", ans[i][1]["ARP"].hwsrc))

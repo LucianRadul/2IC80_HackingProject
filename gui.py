@@ -21,6 +21,7 @@ dns_spoofed = False
 
 def scan_hosts():
     hosts = scan_hosts_scapy(interface)
+    lbx_hosts.delete(0,tk.END)
 
     for i in range(len(hosts)):
         lbx_hosts.insert(i, hosts[i])
@@ -124,8 +125,25 @@ def set_redirect_ip(event):
     redirect_ip = ent_dns_redirect.get()
     message = redirect_ip + " successfully added as the redirect server!"
     tk.messagebox.showinfo(title = "False server", message = message)
-    
 
+def on_closing():
+    try:
+        process_arp_poisoner.terminate()
+        process_dns_poisoner.terminate()
+        window.destroy()
+    except:
+        try:
+            process_arp_poisoner.terminate()
+            window.destroy()
+        except:
+            try:
+                process_dns_poisoner.terminate()
+                window.destroy()
+            except:
+                window.destroy()
+            
+    
+''' NOT USED '''
 def clicked():
     text = txtf_interface.get()
     test.configure(text = "  Interface selected: " + txtf_interface.get())
@@ -254,6 +272,6 @@ btn_dns_stop.grid(column = 0, row = 4)
 fr_dns.place(relx = 0.5, rely = 0.5, anchor = "c")
 
 
-
+window.protocol("WM_DELETE_WINDOW", on_closing)
 
 window.mainloop()
