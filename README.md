@@ -3,7 +3,12 @@
 
 This is a project made for the 2IC80 Offensive Computer Security Course (Q4, 2021) at Eindhoven University of Technology.
 
-The purpose of this project was to deliver an analysis and reproduction of a number of non-trivial attack scenarios. For this, we chose to reproduce and illustrate the following three attacks: ARP Spoofing, DNS Spoofing, TCP Telnet Session Hijack with Reverse Shell.
+The purpose of this project was to deliver an analysis and reproduction of a number of non-trivial attack scenarios. For this, we chose to reproduce and illustrate the following three attacks: ARP Spoofing, DNS Spoofing, TCP Telnet Session Hijack with Reverse Shell using an automated GUI-based tool.
+
+## To Run
+To run the program use:
+
+> sudo python3 gui.py
 
 ## Setup
 
