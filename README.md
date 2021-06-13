@@ -86,7 +86,9 @@ Note that the xinetd service must be started everytime the VM is restarted. More
 
 ## Authors
 Radu Lucian Radulescu - r.radulescu@student.tue.nl
+
 Teodor Lungu - t.lungu@student.tue.nl
+
 Paul Zelina - p.zelina@student.tue.nl
 
 
