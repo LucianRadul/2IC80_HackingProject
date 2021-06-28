@@ -22,12 +22,20 @@ process_tcp_hijacker = Process()
 process_new_terminal = Process()
 arp_poisoned = False
 dns_spoofed = False
+tcp_hijacked = False
 full_control = False
 
 
 ''' Functions '''
 
 def scan_hosts():
+    global interface
+  
+    if (interface == ""):
+        message = "No interface selected!"
+        tk.messagebox.showerror(title = "Hosts", message = message)
+        return
+
     hosts = scan_hosts_scapy(interface)
     lbx_hosts.delete(0, tk.END)
 
@@ -44,10 +52,15 @@ def cbbx_if_selected(event):
 def lbx_if_selected(event):
     global curr_lbx_selected
     curr_lbx_selected = lbx_hosts.get(lbx_hosts.curselection())
-    print(curr_lbx_selected)
 
 def add_target_1():
     global target_1
+
+    if (curr_lbx_selected == ""):
+        message = "No host selected!"
+        tk.messagebox.showerror(title = "Hosts", message = message)
+        return
+
     target_1 = curr_lbx_selected[2]
     lbl_target_1.config(text = target_1)
     message = target_1 + " successfully added as target 1!"
@@ -55,6 +68,12 @@ def add_target_1():
 
 def add_target_2():
     global target_2
+
+    if (curr_lbx_selected == ""):
+        message = "No host selected!"
+        tk.messagebox.showerror(title = "Hosts", message = message)
+        return
+    
     target_2 = curr_lbx_selected[2]
     lbl_target_2.config(text = target_2)
     message = target_2 + " successfully added as target 2!"
@@ -63,18 +82,18 @@ def add_target_2():
 def arp_spoofing():
     global target_1, target_2
 
-    if (target_1 == "" or target_2 == ""):
-        message = "No targets have been selected!"
-        tk.messagebox.showerror(title = "ARP poisoning", message = message)
-        return
+    if (target_1 == "" or target_2 == ""): #Check precondition
+        message = "No targets have been selected!" #Create error messae
+        tk.messagebox.showerror(title = "ARP poisoning", message = message) #Display error message
+        return #Exit
 
     global process_arp_poisoner, arp_poisoned
-    process_arp_poisoner = Process(target=poison_arp_tables, args=(target_1, target_2))
-    process_arp_poisoner.start()
-    arp_poisoned = True
-    lbl_status_arp.config(text = "Status: ARP tables poisoned!")
-    message = "ARP poisoning successful!"
-    tk.messagebox.showinfo(title = "ARP poisoning", message = message)
+    process_arp_poisoner = Process(target=poison_arp_tables, args=(target_1, target_2)) #Initialize process
+    process_arp_poisoner.start() #Start process
+    arp_poisoned = True #Set flag which signals the existance of this process
+    lbl_status_arp.config(text = "Status: ARP tables poisoned!") #Change the status
+    message = "ARP poisoning successful!" #Create info message
+    tk.messagebox.showinfo(title = "ARP poisoning", message = message) #Display message
 
 def arp_stop():
     global arp_poisoned, process_arp_poisoner
@@ -135,9 +154,13 @@ def set_redirect_ip(event):
     tk.messagebox.showinfo(title = "False server", message = message)
 
 def tcp_hijacking():
-    global target_1, target_2, process_tcp_hijacker, process_new_terminal, custom_hijack_cmd
+    global target_1, process_tcp_hijacker, process_new_terminal, custom_hijack_cmd, tcp_hijacked
     client = target_1
-    server = target_2
+
+    if (client == ""):
+        message = "The client target has not been selected!"
+        tk.messagebox.showerror(title = "TCP hijack", message = message)
+        return
     
     if (custom_hijack_cmd != ""):
         process_tcp_hijacker = Process(target = tcp_sniff, args = (client, custom_hijack_cmd))
@@ -148,6 +171,7 @@ def tcp_hijacking():
         process_new_terminal.start()
 
     process_tcp_hijacker.start()
+    tcp_hijacked = True
     message = "TCP hijacking started"
     tk.messagebox.showinfo(title = "TCP hijack", message = message)
 
@@ -158,7 +182,13 @@ def set_tcp_cmd(event):
     tk.messagebox.showinfo(title = "Custom command added!", message = message)
 
 def tcp_stop():
-    global process_tcp_hijacker, process_new_terminal
+    global process_tcp_hijacker, process_new_terminal, tcp_hijacked
+    
+    if (tcp_hijacked == False):
+        message = "TCP hijacking has not been started yet!"
+        tk.messagebox.showwarning(title = "TCP hijack", message = message)
+        return
+
     process_tcp_hijacker.terminate()
 
     if (full_control == True):
@@ -190,10 +220,12 @@ def clicked():
     text = txtf_interface.get()
     test.configure(text = "  Interface selected: " + txtf_interface.get())
 
+''' GUI CREATION '''
+
 
 ''' Define window '''
 window = tk.Tk()
-window.title("Allegedly the best light-weight hacking tool")
+window.title("A light-weight hacking tool")
 window.geometry("700x500+400+150")
 
 
@@ -324,7 +356,7 @@ fr_tcp = tk.Frame(tab_tcp)
 lbl_status_tcp = ttk.Label(fr_tcp, text = "Status: Not hijacked", font=("Courier", 18))
 lbl_status_tcp.grid(column = 0, row = 0, pady = 10)
 
-lbl_select_targets = ttk.Label(fr_tcp, text = "Select target 1 as the client and target 2 as the server!")
+lbl_select_targets = ttk.Label(fr_tcp, text = "Select target 1 as the target client!")
 lbl_select_targets.grid(column = 0, row = 1)
 
 btn_tcp_hijack = ttk.Button(fr_tcp, text = "Start TCP hijacking", command = tcp_hijacking)
