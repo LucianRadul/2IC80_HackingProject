@@ -5,6 +5,8 @@ This is a project made for the 2IC80 Offensive Computer Security Course (Q4, 202
 
 The purpose of this project was to deliver an analysis and reproduction of a number of non-trivial attack scenarios. For this, we chose to reproduce and illustrate the following three attacks: ARP Spoofing, DNS Spoofing, TCP Telnet Session Hijack with Reverse Shell using an automated GUI-based tool.
 
+The tool can be seen in action here:  https://www.youtube.com/watch?v=qx45-x5CwJI
+
 ## To Run
 To run the program use:
 
