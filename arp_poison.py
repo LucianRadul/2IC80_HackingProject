@@ -15,4 +15,8 @@ def restore_arp_table(target_1_ip, target_2_ip):
     target_2_mac = get_mac(target_2_ip)
     send(ARP(op = 2, psrc = target_2_ip, hwsrc = target_2_mac, pdst = target_1_ip, hwdst = target_1_mac), verbose = False)
     send(ARP(op = 2, psrc = target_1_ip, hwsrc = target_1_mac, pdst = target_2_ip, hwdst = target_2_mac), verbose = False)
+
+
+def testFunction():
+    pass
     
